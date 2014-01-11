@@ -19,6 +19,7 @@ from .. import connections
 from neo4django.validators import (validate_array,
                                    validate_str_array,
                                    validate_int_array,
+                                   validate_float_array,
                                    ElementValidator)
 from neo4django.utils import AttrRouter, write_through
 from neo4django.decorators import borrows_methods
@@ -632,6 +633,9 @@ class FloatProperty(Property):
     def to_neo(self, value):
         return float(value)
 
+    def from_neo(self, value):
+        return float(value)
+
     def to_neo_index(self, value):
         # as with ints, we use a fixed-width binary decimal encoding with a
         # '-' for negative and '0' for positive or 0. we get a long-type
@@ -807,9 +811,9 @@ class ArrayProperty(Property):
                 el_val = ElementValidator(vals_or_tuple)
             self.validators.append(el_val)
 
-        #Store array values as a token separated string. For use in the event
-        #the user needs to access the neo4j data multiple ways.
-        #For example using REST interface you cannot store an empty array
+        # Store array values as a token separated string. For use in the event
+        # the user needs to access the neo4j data multiple ways.
+        # For example using REST interface you cannot store an empty array
         self.use_string = kwargs.get("use_string", False)
         self.token = kwargs.get("token", ",")
         self.escape_token = kwargs.get("escape_token", "+")
@@ -867,6 +871,18 @@ class IntArrayProperty(ArrayProperty):
 
     member_to_neo_index = IntegerProperty.to_neo_index.im_func
 
+
+class FloatArrayProperty(ArrayProperty):
+    _internal_type_ = 'FloatArrayProperty'
+    default_validators = [validate_float_array]
+
+    member_to_neo_index = FloatProperty.to_neo_index.im_func
+
+    def to_neo(self, value):
+        return tuple(FloatProperty.to_neo.im_func(self, v) for v in value)
+
+    def from_neo(self, value):
+        return tuple(FloatProperty.from_neo.im_func(self, v) for v in value)
 
 class BooleanProperty(Property):
     _internal_type_ = 'BooleanProperty'

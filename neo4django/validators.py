@@ -29,6 +29,11 @@ def validate_int(value):
         raise exceptions.ValidationError('Enter a valid int.')
 
 
+def validate_float(value):
+    if not isinstance(value, (float, int)):
+        raise exceptions.ValidationError('Enter a valid float.')
+
+
 class ElementValidator(object):
     """Validates a sequence element by element with a list of validators."""
     def __init__(self, validators, message='Invalid sequence of elements.',
@@ -69,5 +74,13 @@ class StringArrayValidator(ArrayValidator, ElementValidator):
         super(StringArrayValidator, self).__init__([validate_basestring],
                                                    *args, **kwargs)
 
+
+class FloatArrayValidator(ArrayValidator, ElementValidator):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('message', 'Enter a sequence of valid floats.')
+        super(FloatArrayValidator, self).__init__([validate_float],
+                                                *args, **kwargs)
+
 validate_str_array = StringArrayValidator()
 validate_int_array = IntArrayValidator()
+validate_float_array = FloatArrayValidator()

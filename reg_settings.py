@@ -199,5 +199,4 @@ should_fail=[
 	'test_relationship_models',
 	'test_typenode_transactionality',
 	'test_autoproperty_transactionality',
-	'test_relationship_filter_many_to_many',
-	'test_float_array_property']
+	'test_relationship_filter_many_to_many']
