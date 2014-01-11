@@ -363,6 +363,36 @@ def test_filter_range():
     all_between_s_u = Person.objects.filter(name__range=('S','U'))
     assert len(all_between_s_u) >= 1, "There's at least one 'T' name!"
 
+
+@with_setup(None, teardown)
+def test_filter_float_range():
+    import random
+
+    epsilon = 0.001
+    ages = []
+    while len(ages) < 5:
+        r = random.uniform(-5.0, 5.0)
+        if not(any(r > i - epsilon and r < i + epsilon for i in ages)):
+            ages.append(r)
+
+    class FloatAgedPerson(models.NodeModel):
+        age = models.FloatProperty()
+        indexed_age = models.FloatProperty(indexed=True)
+
+    for a in ages:
+        FloatAgedPerson.objects.create(age=a, indexed_age=a)
+
+    # unindexed range queries
+    for a in ages:
+        eq_(1, len(FloatAgedPerson.objects.filter(
+            age__range=[a - epsilon,a + epsilon])))
+
+    # indexed range queries
+    for a in ages:
+        eq_(1, len(list(FloatAgedPerson.objects.filter(
+            indexed_age__range=[a - epsilon, a + epsilon]))))
+
+
 @with_setup(None, teardown)
 def test_filter_date_range():
     class Lifetime(models.NodeModel):

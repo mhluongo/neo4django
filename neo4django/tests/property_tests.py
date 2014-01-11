@@ -1,4 +1,4 @@
-from nose.tools import eq_, with_setup
+from nose.tools import eq_, with_setup, assert_almost_equal
 from django.core.exceptions import ValidationError
 
 import datetime
@@ -75,7 +75,21 @@ def test_integer():
 
     for i in [0,1,-1,28,neo4django.db.models.properties.MAX_INT,neo4django.db.models.properties.MIN_INT]:
         try_int(i)
+
+@with_setup(None, teardown)
+def test_float():
+    class FloatPerson(models.NodeModel):
+        age = models.FloatProperty()
+        age_indexed = models.FloatProperty(indexed=True)
+
+    vals = [0.0, -1.0, 1.0, 12345.6789, 98766.123123, -1232375.4234]
+
+    # check the values
+    for f in vals:
+        node = FloatPerson.objects.create(age=f, age_indexed=f)
+        assert_almost_equal(f, FloatPerson.objects.get(id=node.id).age)
     
+
 def test_date_constructor():
     class DateNode(models.NodeModel):
         date = models.DateProperty()
@@ -275,6 +289,26 @@ def test_int_array_property():
 
     try:
         n2 = IntArrayNode(vals = ('1','2','3'))
+        n2.save()
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError('tuples of strs should not validate')
+
+@with_setup(None, teardown)
+def test_float_array_property():
+    """Tests that FloatArrayProperty validates, saves and returns properly."""
+    class FloatArrayNode(models.NodeModel):
+        vals = models.FloatArrayProperty()
+
+    vals = (1,2.1234,3.0,-1.0)
+    n1 = FloatArrayNode(vals = vals)
+    eq_(n1.vals, vals)
+    n1.save()
+    eq_(n1.vals, vals)
+
+    try:
+        n2 = IntArrayNode(vals = ('1.12','2.0','-3'))
         n2.save()
     except ValidationError:
         pass
