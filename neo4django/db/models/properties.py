@@ -614,6 +614,60 @@ class IntegerProperty(Property):
         return super(IntegerProperty, self).formfield(**defaults)
 
 
+class FloatProperty(Property):
+    _internal_type_ = 'FloatProperty'
+    default_validators = []
+
+    formfield = formfields.FloatField
+
+    def __init__(self, **kwargs):
+        if kwargs.get('indexed', False):
+            kwargs.setdefault('indexed_fulltext', True)
+            kwargs.setdefault('indexed_range', True)
+        return super(FloatProperty, self).__init__(**kwargs)
+
+    def get_default(self):
+        return 0.0
+
+    def to_neo(self, value):
+        return float(value)
+
+    def to_neo_index(self, value):
+        # as with ints, we use a fixed-width binary decimal encoding with a
+        # '-' for negative and '0' for positive or 0. we get a long-type
+        # representation from the double and 1's complement the unsigned bit
+        # for proper negative comparisons
+        import struct
+        packed = struct.pack('>d', abs(value))
+        if value < 0:
+            packed = ''.join(chr(ord(x) ^ 0xFF) for x in packed)
+        unpacked = struct.unpack('>Q', packed)[0]
+        s = str(unpacked).zfill(19)
+        return ('-' if value < 0 else '0') + s
+
+    @property
+    def to_neo_index_gremlin(self):
+        """
+        Returns a Gremlin/Groovy closure literal that can compute
+        to_neo_index(value) server-side.
+        """
+        return """{ i ->
+            bytes = new byte[8];
+            ByteBuffer.wrap(bytes).putDouble((double) i.abs());
+            if (i < 0) {
+                for(int j = 0; j<bytes.length; j++){
+                    bytes[j] = (byte)(~((int)bytes[j]));
+                }
+            }
+            (i < 0?'-':'0') + String.format('%019d', ByteBuffer.wrap(bytes).getLong());
+        }"""
+
+    def formfield(self, **kwargs):
+        defaults = {'form_class': formfields.FloatField}
+        defaults.update(kwargs)
+        return super(FloatProperty, self).formfield(**defaults)
+
+
 class AutoProperty(IntegerProperty):
     _internal_type_ = 'AutoProperty'
     editable = False

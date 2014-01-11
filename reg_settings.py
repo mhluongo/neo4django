@@ -200,6 +200,4 @@ should_fail=[
 	'test_typenode_transactionality',
 	'test_autoproperty_transactionality',
 	'test_relationship_filter_many_to_many',
-	'test_float',
-	'test_filter_float_range',
 	'test_float_array_property']

@@ -1,3 +1,5 @@
+import java.nio.ByteBuffer
+
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.graphdb.index.IndexManager
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jIndex
