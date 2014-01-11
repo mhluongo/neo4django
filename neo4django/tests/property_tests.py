@@ -308,7 +308,7 @@ def test_float_array_property():
     eq_(n1.vals, vals)
 
     try:
-        n2 = IntArrayNode(vals = ('1.12','2.0','-3'))
+        n2 = FloatArrayNode(vals = ('1.12','2.0','-3'))
         n2.save()
     except ValidationError:
         pass
