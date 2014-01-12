@@ -593,21 +593,49 @@ class IntegerProperty(Property):
         return int(value)
 
     def to_neo_index(self, value):
-        #for now, we'll just use a fixed-width binary decimal encoding with a
-        #'-' for negative and '0' for positive or 0.
-        s = str(abs(value))
-        if len(s) > 20:
-            raise ValueError('Values should be between {0} and {1}.'.format(MIN_INT, MAX_INT))
-        return ('-' if value < 0 else '0') + s.zfill(19)
+        # we use a fixed-width binary encoding with a '-' for negative and '0'
+        # for positive or 0. we get a long-type and 1's complement the unsigned bit
+        # for proper negative comparisons
+        import struct
+        packed = struct.pack('>Q', abs(value))
+        if value < 0:
+            packed = ''.join(chr(ord(x) ^ 0xFF) for x in packed)
+        unpacked = struct.unpack('>Q', packed)[0]
+        s = str(unpacked).zfill(19)
+        return ('-' if value < 0 else '0') + s
 
     @property
     def to_neo_index_gremlin(self):
         """
-        Return a Gremlin/Groovy closure literal that can compute
-        to_neo_index(value) server-side. The closure should take a single value
-        as an argument (that value actually set on the node).
+        Returns a Gremlin/Groovy closure literal that can compute
+        to_neo_index(value) server-side.
         """
-        return """{ i -> (i < 0?'-':'0') + String.format('%019d',i)} """
+        return """{ i ->
+            bytes = new byte[8];
+            ByteBuffer.wrap(bytes).putLong((long) i.abs());
+            if (i < 0) {
+                for(int j = 0; j<bytes.length; j++){
+                    bytes[j] = (byte)(~((int)bytes[j]));
+                }
+            }
+            (i < 0?'-':'0') + String.format('%019d', ByteBuffer.wrap(bytes).getLong());
+        }"""
+    #def to_neo_index(self, value):
+    #    #for now, we'll just use a fixed-width binary decimal encoding with a
+    #    #'-' for negative and '0' for positive or 0.
+    #    s = str(abs(value))
+    #    if len(s) > 20:
+    #        raise ValueError('Values should be between {0} and {1}.'.format(MIN_INT, MAX_INT))
+    #    return ('-' if value < 0 else '0') + s.zfill(19)
+
+    #@property
+    #def to_neo_index_gremlin(self):
+    #    """
+    #    Return a Gremlin/Groovy closure literal that can compute
+    #    to_neo_index(value) server-side. The closure should take a single value
+    #    as an argument (that value actually set on the node).
+    #    """
+    #    return """{ i -> (i < 0?'-':'0') + String.format('%019d',i)} """
 
     def formfield(self, **kwargs):
         defaults = {'form_class': formfields.IntegerField}
