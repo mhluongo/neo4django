@@ -24,4 +24,4 @@ notifications:
     on_success: change
     on_failure: change
 script:
-  - nosetests --with-regression -r --verbose
+  - nosetests -r --verbose
