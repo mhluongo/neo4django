@@ -19,7 +19,7 @@ setup(
     install_requires=[
         'decorator>=3.3.1',
         'python-dateutil>=2.0',
-        'neo4jrestclient>=1.7',
+        'neo4jrestclient>=1.7, <2.0',
         'Django>=1.3, <1.6',
         'lucene-querybuilder>=0.1.6'
     ],
