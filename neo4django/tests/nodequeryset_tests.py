@@ -363,6 +363,13 @@ def test_filter_range():
     all_between_s_u = Person.objects.filter(name__range=('S','U'))
     assert len(all_between_s_u) >= 1, "There's at least one 'T' name!"
 
+    # test that indexed negatives works properly (#232)
+    for i in xrange(-10, 0):
+        Person.objects.create(age=i)
+    super_young = list(Person.objects.filter(age__range=(-10,-5)))
+    eq_(6, len(super_young))
+    eq_(sorted(p.age for p in super_young), range(-10, -4))
+
 
 @with_setup(None, teardown)
 def test_filter_float_range():
